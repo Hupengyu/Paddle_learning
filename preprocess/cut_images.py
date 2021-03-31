@@ -27,7 +27,7 @@ def cut_images(img):
 
 
 if __name__ == '__main__':
-    file_path = './pictures/pdf/扫描全能王 2021-03-29 17.23.pdf'
+    file_path = './pictures/img_2.png'
     crops_save_path = './results/crops/'
 
     # ------pdf转images------
@@ -37,6 +37,11 @@ if __name__ == '__main__':
         imgs_list = cv2.imread(file_path)
 
     # -----------处理图片开始----------
-    for img in imgs_list:
-        cut_images(img)
+    if type(imgs_list) == numpy.ndarray:
+        invoices_num = detect_image_counts(imgs_list)
+        if invoices_num > 1:
+            cut_images(imgs_list)
+    else:
+        for img in imgs_list:
+            cut_images(img)
 

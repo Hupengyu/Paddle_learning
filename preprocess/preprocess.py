@@ -7,7 +7,7 @@ pwd = os.getcwd()
 
 
 def show_img(img, win_name):
-    img = cv2.resize(img, None, fx=0.5, fy=0.5)
+    img = cv2.resize(img, None, fx=0.3, fy=0.3)
     cv2.imshow(win_name, img)
     cv2.waitKey(0)
     # cv2.destroyAllWindows()
@@ -87,7 +87,7 @@ def detect_image_counts(img):
         # 在原图的拷贝上画出轮廓
         img_copy = img.copy()
         cv2.drawContours(img_copy, [box], -1, (255, 0, 0), 2)
-        # show_img(img_copy, 'drawContours')
+        show_img(img_copy, 'drawContours')
 
         # 获取透视变换的原坐标
         if box.shape[0] is not 4:
