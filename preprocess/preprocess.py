@@ -30,18 +30,7 @@ def cut_image(image, count=2):
 
 # 保存分割后的图片
 def save_images(image, crops_save_path, image_index):
-    # if type(image_list) == numpy.ndarray:
-    #     print('type over!**************2***********')
-    #     cv2.imwrite(crops_save_path + str(image_index) + '.png', image_list)
-    #     cv2.imshow('aa', image_list)
-    #     cv2.waitKey()
-    #     image_index += 1
-    # else:
-    # for image in image_list:
     cv2.imwrite(crops_save_path + str(image_index) + '.png', image)
-    # cv2.imshow('aa', image)
-    # cv2.waitKey()
-    image_index += 1
 
 
 def detect_image_counts(img):

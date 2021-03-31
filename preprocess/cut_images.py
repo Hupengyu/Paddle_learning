@@ -1,5 +1,5 @@
 from pdf2png_v2 import pdf2image
-from preprocess import detect_image_counts, cut_image, save_images
+from preprocess import detect_image_counts, cut_image
 import os
 import cv2
 import numpy
@@ -18,10 +18,10 @@ def cut_images(img):
         print('-------------此图片有两张发票----------------')
         imgs_list = cut_image(img)
         for img in imgs_list:
-            save_images(img, crops_save_path, image_index)
+            cv2.imwrite(crops_save_path + str(image_index) + '.png', img)
             image_index += 1
     else:
-        save_images(img, crops_save_path, image_index)
+        cv2.imwrite(crops_save_path + str(image_index) + '.png', img)
         image_index += 1
     print('***************************************处理图片完成*************************************')
 
