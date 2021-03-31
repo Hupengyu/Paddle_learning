@@ -27,7 +27,7 @@ def cut_images(img):
 
 
 if __name__ == '__main__':
-    file_path = './pictures/img_2.png'
+    file_path = './pictures/IMG_20191012_142702.jpg'
     crops_save_path = './results/crops/'
 
     # ------pdf转images------
