@@ -1,6 +1,5 @@
 import cv2
 import numpy as np
-import sys
 
 
 def show_img(img, win_name):
