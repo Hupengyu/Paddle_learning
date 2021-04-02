@@ -21,7 +21,7 @@ def pdf2images(pdf_name):
 
 
 if __name__ == '__main__':
-    pdf_path = './pictures/pdf/01407883-90发票.pdf'
+    pdf_path = './pictures/pdf/发票3.pdf'
     crops_save_path = './results/crops/'
 
     image_index = 1

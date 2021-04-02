@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import os
+import time
 
 
 def show_img(img, win_name):
@@ -10,9 +11,6 @@ def show_img(img, win_name):
 
 
 def detect_circle(image):
-    # dst = cv2.bilateralFilter(src=image, d=0, sigmaColor=100, sigmaSpace=5) # 高斯双边滤波(慢)
-    # dst = cv2.pyrMeanShiftFiltering(image, 10, 100)  # 均值偏移滤波（稍微快）
-    # dst = cv2.cvtColor(dst, cv2.COLOR_BGRA2GRAY)    # BGRA2GRAY
     seal_num = 0
 
     gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
@@ -40,20 +38,20 @@ def detect_circle(image):
         cnts = sorted(cnts, key=cv2.contourArea, reverse=True)[:5]
     else:
         print("Did not find contours\n")
-        return
+        return seal_num
 
     for box in cnts:
         # *********************轮廓点预处理***********************
         if len(box) < 200:
             continue
-        epsilon = 0.01 * cv2.arcLength(box, True)   # 设定近似多边形的精度
-        approx = cv2.approxPolyDP(box, epsilon, True)   # 根据精度重新绘制轮廓
+        epsilon = 0.01 * cv2.arcLength(box, True)  # 设定近似多边形的精度
+        approx = cv2.approxPolyDP(box, epsilon, True)  # 根据精度重新绘制轮廓
         # ***************visual****************
         img_copy = image.copy()
         cv2.drawContours(img_copy, [approx], -1, (255, 0, 0), 2)
         approx_num = len(approx)
         # show_img(img_copy, 'approx_num:%f' % approx_num)
-        if 8 < approx_num:    # 剔除噪音(少于10个点的轮廓剔除)
+        if 8 < approx_num:  # 剔除噪音(少于10个点的轮廓剔除)
             # ******************ellipse识别*****************
             # ellipse = cv2.fitEllipse(approx)    # There should be at least 5 points
             # ellipse = cv2.ellipse(image, ellipse, (0, 255, 0), 4)
@@ -82,7 +80,7 @@ def seal_mask_handle(img):
     mask1 = cv2.inRange(hsv_image, low_red0, high_red0)  # 根据阈值生成掩码
     mask2 = cv2.inRange(hsv_image, low_red1, high_red1)  # 根据阈值生成掩码
 
-    mask = cv2.bitwise_or(mask1, mask2)    # hsv的红色有两个范围
+    mask = cv2.bitwise_or(mask1, mask2)  # hsv的红色有两个范围
 
     red_mask = mask2 == 255  # 取mask中为255的设置为true
 
@@ -103,18 +101,26 @@ def invoice_or_not(image):
     seal_num_res = detect_circle(seal_mask_res)
     print('seal_num_res: ', seal_num_res)
     # # 输出印章数量
-    if seal_num_res % 2 != 0:
+    # if seal_num_res == 1:     # 识别成一个也当成是发票
+    if seal_num_res % 2 != 0 or seal_num_res == 0:
         print('识别失败')
     else:
         invoice_num = int(seal_num_res / 2)
         print('识别成功')
         print('invoice_num: ', invoice_num)
-    print('******************印章数量识别结束******************')
+    print('**********************印章数量识别结束***********************')
 
 
 if __name__ == '__main__':
-    file_path = 'results/crops'
+    # file_path = 'results/crops'
+    file_path = 'pictures/2021-04-02 18-10-44屏幕截图.png'
     # 读取函数，用来读取文件夹中的所有函数，输入参数是文件名
-    for filename in os.listdir(file_path):
-        img = cv2.imread(file_path + "/" + filename)
-        invoice_or_not(img)
+    # for filename in os.listdir(file_path):
+    #     img = cv2.imread(file_path + "/" + filename)
+    #     invoice_or_not(img)
+    img = cv2.imread(file_path)
+    time_start = time.time()
+    print('time_start: ', time_start)
+    invoice_or_not(img)
+    time = time.time() - time_start
+    print('time_start: ', time)
