@@ -1,4 +1,4 @@
-from pdf2pages import pdf2images
+from pdf2pages import pdf2pages
 from preprocess import detect_image_counts
 from preprocess.cut_images import cut_images_save
 import os
@@ -15,7 +15,7 @@ if __name__ == '__main__':
 
     # ------pdf转images------
     if file_path[-3:] == 'pdf':
-        imgs_list = pdf2images(file_path)
+        imgs_list = pdf2pages(file_path)
     else:
         imgs_list = cv2.imread(file_path)
 

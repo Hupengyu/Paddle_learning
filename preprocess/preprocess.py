@@ -39,10 +39,6 @@ def detect_image_counts(img):
 
     invoice_num = 0
 
-    # 读入图像
-    # img = cv2.imread(img_path)
-    # show_img(img, 'img')
-
     # 计算图片面积
     img_h = img.shape[0]
     img_w = img.shape[1]
@@ -85,9 +81,9 @@ def detect_image_counts(img):
         box = np.int0(cv2.boxPoints(rect))
 
         # 在原图的拷贝上画出轮廓
-        img_copy = img.copy()
-        cv2.drawContours(img_copy, [box], -1, (255, 0, 0), 2)
-        show_img(img_copy, 'drawContours')
+        # img_copy = img.copy()
+        # cv2.drawContours(img_copy, [box], -1, (255, 0, 0), 2)
+        # show_img(img_copy, 'drawContours')
 
         # 获取透视变换的原坐标
         if box.shape[0] is not 4:
@@ -123,6 +119,7 @@ def detect_image_counts(img):
         # print(area_ratio)
         # print(length_height_ratio)
         # print('--------------ratio---------------')
+        # 通过判断
         if 0.85 < length_ratio < 0.97 and 0.30 < area_ratio < 0.8 and 0.45 < length_height_ratio < 0.55:
             # print('--------------enter---------------')
             # print('area_box: ', area_box)
@@ -158,3 +155,10 @@ def detect_image_counts(img):
         invoice_num = 1
 
     return invoice_num
+
+
+if __name__ == '__main__':
+    img_path = ''
+    img = cv2.imread(img_path)
+
+    detect_image_counts(img)

@@ -2,7 +2,10 @@ import cv2
 import numpy as np
 import os
 import time
-
+from pdf2pages import pdf2pages
+from preprocess import detect_image_counts
+from cut_images import cut_images_save
+import math
 
 def show_img(img, win_name):
     img = cv2.resize(img, None, fx=0.5, fy=0.5)
@@ -23,15 +26,14 @@ def detect_circle(image):
     # show_img(edged, 'edged')
 
     # 形态学变换，由于光照影响，有很多小的边缘需要进行腐蚀和膨胀处理
-    kernel = np.ones((3, 3), np.uint8)  # 膨胀腐蚀的卷积核修改
+    kernel = np.ones((7, 7), np.uint8)  # 膨胀腐蚀的卷积核修改
     morphed = cv2.dilate(edged, kernel, iterations=5)  # 膨胀
     morphed = cv2.erode(morphed, kernel, iterations=3)  # 腐蚀
-    # show_img(morphed, 'morphed')
 
-    # 找轮廓
     morphed_copy = morphed.copy()
     # show_img(morphed_copy, 'morphed_copy')
 
+    # 找外轮廓
     cnts, _ = cv2.findContours(morphed_copy, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     # # 排序，并获取其中最大的轮廓
     if len(cnts) is not 0:
@@ -39,11 +41,10 @@ def detect_circle(image):
     else:
         print("Did not find contours\n")
         return seal_num
-
     for box in cnts:
-        # *********************轮廓点预处理***********************
-        if len(box) < 200:
+        if len(box) < 400 or len(box) > 650:
             continue
+        print('box_nums: ', len(box))
         epsilon = 0.01 * cv2.arcLength(box, True)  # 设定近似多边形的精度
         approx = cv2.approxPolyDP(box, epsilon, True)  # 根据精度重新绘制轮廓
         # ***************visual****************
@@ -59,6 +60,7 @@ def detect_circle(image):
             seal_num += 1
         else:
             continue
+    cv2.destroyAllWindows()
     return seal_num
 
 
@@ -71,10 +73,16 @@ def seal_mask_handle(img):
     hsv_image = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)  # 颜色空间转换
     # show_img(hsv_image, 'hsv_image')
 
-    low_red0 = np.array([0, 45, 45])  # 设定红色的高阈值
-    high_red0 = np.array([15, 119, 255])  # 设定红色的高阈值
+    # low_red0 = np.array([0, 45, 45])  # 设定红色的高阈值
+    # high_red0 = np.array([15, 119, 255])  # 设定红色的高阈值
+    #
+    # low_red1 = np.array([156, 100, 100])  # 设定红色的低阈值
+    # high_red1 = np.array([179, 255, 255])  # 设定红色的高阈值
 
-    low_red1 = np.array([156, 100, 100])  # 设定红色的低阈值
+    low_red0 = np.array([0, 25, 194])  # 设定红色的高阈值
+    high_red0 = np.array([15, 255, 255])  # 设定红色的高阈值
+
+    low_red1 = np.array([124, 25, 194])  # 设定红色的低阈值
     high_red1 = np.array([179, 255, 255])  # 设定红色的高阈值
 
     mask1 = cv2.inRange(hsv_image, low_red0, high_red0)  # 根据阈值生成掩码
@@ -94,33 +102,55 @@ def seal_mask_handle(img):
 
 
 def invoice_or_not(image):
-    print('******************印章数量识别开始******************')
+    global invoices_sum
+    print('------------------印章数量识别开始------------------')
     # 先将红色印章mask
     seal_mask_res = seal_mask_handle(image)
     # 计数印章数量
     seal_num_res = detect_circle(seal_mask_res)
     print('seal_num_res: ', seal_num_res)
     # # 输出印章数量
-    # if seal_num_res == 1:     # 识别成一个也当成是发票
-    if seal_num_res % 2 != 0 or seal_num_res == 0:
+    if seal_num_res == 0:
         print('识别失败')
+        print('**********************印章数量识别结束***********************')
+        return False
     else:
-        invoice_num = int(seal_num_res / 2)
         print('识别成功')
-        print('invoice_num: ', invoice_num)
-    print('**********************印章数量识别结束***********************')
+        invoices_sum += 1
+        print('**********************印章数量识别结束***********************')
+        return True
 
 
 if __name__ == '__main__':
-    # file_path = 'results/crops'
-    file_path = 'pictures/2021-04-02 18-10-44屏幕截图.png'
-    # 读取函数，用来读取文件夹中的所有函数，输入参数是文件名
-    # for filename in os.listdir(file_path):
-    #     img = cv2.imread(file_path + "/" + filename)
-    #     invoice_or_not(img)
-    img = cv2.imread(file_path)
-    time_start = time.time()
-    print('time_start: ', time_start)
-    invoice_or_not(img)
-    time = time.time() - time_start
-    print('time_start: ', time)
+    invoices_sum = 0
+    pdf_path = './pictures/pdf/大别山253#材料结算（有订单）.pdf'
+    crops_save_path = './results/crops/'
+
+    # ------pdf转images----- -
+    if pdf_path[-3:] == 'pdf':
+        imgs_list = pdf2pages(pdf_path)
+    else:
+        imgs_list = cv2.imread(pdf_path)
+
+    # -----------处理每张图片，两张的话切割----------
+    if type(imgs_list) == np.ndarray:
+        invoices_num = detect_image_counts(imgs_list)
+        if invoices_num > 1:
+            cut_images_save(imgs_list, crops_save_path)
+    else:
+        for img in imgs_list:
+            cut_images_save(img, crops_save_path)
+
+    # -----------对切割后的图片进行Invoice判定----------
+    for filename in os.listdir(crops_save_path):
+        print('-------------------*****************************************---------------------')
+        img = cv2.imread(crops_save_path + "/" + filename)
+        print(crops_save_path + "/" + filename)
+        invoice_or_not(img)
+
+    print('发票总数： ', invoices_sum)
+
+    # ------------单张测试------------
+    # path = 'pictures/IMG_20191012_142702.jpg'
+    # img = cv2.imread(path)
+    # invoice_or_not(img)

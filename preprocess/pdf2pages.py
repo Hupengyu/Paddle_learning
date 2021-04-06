@@ -4,7 +4,7 @@ import os
 import numpy
 
 
-def pdf2images(pdf_name):
+def pdf2pages(pdf_name):
     pdf = fitz.Document(pdf_name)
     imgs_list = []
     for i, pg in enumerate(range(0, pdf.pageCount)):
@@ -28,7 +28,7 @@ if __name__ == '__main__':
 
     # ------pdf转images------
     if pdf_path[-3:] == 'pdf':
-        imgs_list = pdf2images(pdf_path)
+        imgs_list = pdf2pages(pdf_path)
     else:
         imgs_list = cv2.imread(pdf_path)
 
