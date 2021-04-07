@@ -1,11 +1,10 @@
 import cv2
 import numpy as np
 import os
-import time
 from pdf2pages import pdf2pages
 from preprocess import detect_image_counts
 from cut_images import cut_images_save
-import math
+
 
 def show_img(img, win_name):
     img = cv2.resize(img, None, fx=0.5, fy=0.5)
@@ -123,7 +122,7 @@ def invoice_or_not(image):
 
 if __name__ == '__main__':
     invoices_sum = 0
-    pdf_path = './pictures/pdf/大别山253#材料结算（有订单）.pdf'
+    pdf_path = './pictures/pdf/大别山-11439#（职工食堂经费补贴）.pdf'
     crops_save_path = './results/crops/'
 
     # ------pdf转images----- -
