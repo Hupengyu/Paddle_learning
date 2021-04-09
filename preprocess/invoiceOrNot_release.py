@@ -90,7 +90,7 @@ def invoice_or_not(image):
 
 
 if __name__ == '__main__':
-    pdf_path = './pictures/pdf/大别山253#材料结算（有订单）.pdf'
+    pdf_path = './pictures/pdf/17504-顺盛74100.pdf'
     crops_save_path = './results/crops/'
 
     # ------pdf转images----- -

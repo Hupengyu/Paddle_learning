@@ -41,7 +41,7 @@ def detect_circle(image):
         print("Did not find contours\n")
         return seal_num
     for box in cnts:
-        if len(box) < 400 or len(box) > 650:
+        if len(box) < 300 or len(box) > 800:
             continue
         print('box_nums: ', len(box))
         epsilon = 0.01 * cv2.arcLength(box, True)  # 设定近似多边形的精度
@@ -51,7 +51,7 @@ def detect_circle(image):
         cv2.drawContours(img_copy, [approx], -1, (255, 0, 0), 2)
         approx_num = len(approx)
         # show_img(img_copy, 'approx_num:%f' % approx_num)
-        if 8 < approx_num:  # 剔除噪音(少于10个点的轮廓剔除)
+        if 5 < approx_num:  # 剔除噪音(少于10个点的轮廓剔除)
             # ******************ellipse识别*****************
             # ellipse = cv2.fitEllipse(approx)    # There should be at least 5 points
             # ellipse = cv2.ellipse(image, ellipse, (0, 255, 0), 4)
@@ -122,7 +122,7 @@ def invoice_or_not(image):
 
 if __name__ == '__main__':
     invoices_sum = 0
-    pdf_path = './pictures/pdf/大别山-11439#（职工食堂经费补贴）.pdf'
+    pdf_path = './pictures/pdf/扫描全能王 2021-03-29 17.23.pdf'
     crops_save_path = './results/crops/'
 
     # ------pdf转images----- -

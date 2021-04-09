@@ -18,7 +18,7 @@ cv2.createTrackbar("US", "Tracking", 255, 255, nothing)
 cv2.createTrackbar("UV", "Tracking", 255, 255, nothing)
 
 while True:
-    image_path = 'pictures/img_2.png'
+    image_path = 'pictures/000.jpg'
     frame = cv2.imread(image_path)
 
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -38,8 +38,8 @@ while True:
 
     res = cv2.bitwise_and(frame, frame, mask=mask)  # src1,src2
 
-    # frame = cv2.resize(frame, None, fx=0.3, fy=0.3)
-    # cv2.imshow("frame", frame)
+    frame = cv2.resize(frame, None, fx=0.3, fy=0.3)
+    cv2.imshow("frame", frame)
     mask = cv2.resize(mask, None, fx=0.3, fy=0.3)
     cv2.imshow("mask", mask)
     res = cv2.resize(res, None, fx=0.3, fy=0.3)
