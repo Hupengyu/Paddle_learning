@@ -122,7 +122,7 @@ def invoice_or_not(image):
 
 if __name__ == '__main__':
     invoices_sum = 0
-    pdf_path = './pictures/pdf/扫描全能王 2021-03-29 17.23.pdf'
+    pdf_path = './pictures/pdf/大别山14380采购价款.pdf'
     crops_save_path = './results/crops/'
 
     # ------pdf转images----- -

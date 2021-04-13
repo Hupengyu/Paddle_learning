@@ -55,3 +55,10 @@ for box in c:
 
 
 cv2.imwrite(res_path, input_img)
+
+
+if __name__ == '__main__':
+    # 读取图片
+    img_path = 'pictures/1.png'
+    img = cv2.imread(img_path)
+    
