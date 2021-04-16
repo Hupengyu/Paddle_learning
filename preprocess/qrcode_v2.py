@@ -60,8 +60,8 @@ def get_contours(img0):
 
     # 形态学变换，由于光照影响，有很多小的边缘需要进行腐蚀和膨胀处理
     kernel = np.ones((5, 5), np.uint8)  # 膨胀腐蚀的卷积核修改
-    morphed = cv2.dilate(edged, kernel, iterations=5)  # 膨胀
-    morphed = cv2.erode(morphed, kernel, iterations=5)  # 腐蚀
+    morphed = cv2.dilate(edged, kernel, iterations=3)  # 膨胀
+    morphed = cv2.erode(morphed, kernel, iterations=3)  # 腐蚀
 
     morphed_copy = morphed.copy()
     contours, _ = cv2.findContours(morphed_copy, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
@@ -71,59 +71,65 @@ def get_contours(img0):
 
 def pick_rectangels(contours, gray_image):
     boxs = []
+    print('count_contours: ', len(contours))
     for contour in contours:
-        x, y, w, h = cv2.boundingRect(contour)  # minAreaRect
-        if (abs(w - h) < 20) & (w > 50):  # 找近似正方形
-            boxs.append([x, y, w, h])
-            if len(contour) < 300 or len(contour) > 1200:
-                continue
-            print('x, y, w, h: ', x, y, w, h)
-            # epsilon = 0.01 * cv2.arcLength(contour, True)  # 设定近似多边形的精度
-            # approx = cv2.approxPolyDP(contour, epsilon, True)  # 根据精度重新绘制轮廓
-            img_copy = gray_image.copy()
-            # # rect = cv2.minAreaRect(approx)
-            # # box = np.int0(cv2.boxPoints(rect))
-            # cv2.drawContours(img_copy, [approx], -1, (0, 255, 0), 5)
-            cv2.rectangle(img_copy, (x, y), (x + w, y + h), (0, 255, 0), 3)
-            show_img(img_copy, 'boxs')
-        else:
+        if len(contour) < 100 or len(contour) > 800:
             continue
+        rect = cv2.minAreaRect(contour)     # 获取最小外接矩阵，中心点坐标，宽高，旋转角度
+        max_len = max(rect[1][0], rect[1][1])
+        min_len = min(rect[1][1], rect[1][0])
+        ratio_w_h = max_len / min_len
+        if ratio_w_h > 1.5 and min_len < 50:
+            continue
+
+        print('ratio_w_h: ', ratio_w_h)
+        print(len(contour))
+
+        box = np.int0(cv2.boxPoints(rect))  # 获取矩形四个顶点，浮点型[(tr, tl, bl, br) = src_coor]
+        if box.shape[0] is not 4:
+            continue
+        boxs.append(box)
+
+        img_copy = gray_image.copy()
+        cv2.drawContours(img_copy, [box], -1, (255, 0, 0), 2)   # 只需要四个点
+        show_img(img_copy, 'drawContours')
 
     return boxs
 
 
 def decode_qrcodes(boxs, original_image):
     for box in boxs:  # 对识别到的每一个正方形进行二维码识别，返回信息则确定
-        x1 = box[0]             # 左x坐标
-        x2 = box[0] + box[2]    # 右x坐标
-        y1 = box[1]             # 上y坐标
-        y2 = box[1] + box[3]    # 下y坐标
+        x1 = box[1][0]-5
+        x2 = box[3][0]+5
+        y1 = box[1][1]-5
+        y2 = box[3][1]+5
 
         original_image_copy = original_image.copy()
-        cv2.rectangle(original_image_copy, (x1, y1), (x2, y2), (255, 0, 0), 4)  # 对角坐标
-        show_img(original_image, 'decode_qrcodes')
+        cv2.rectangle(original_image_copy, (x1, y1), (x2, y2), (0, 0, 255), 4)
+        show_img(original_image_copy, 'decode_qrcodes')
 
         qrcode_cute = original_image[y1:y2, x1:x2]  # y1:y2, x1:x2
-        show_img(qrcode_cute, 'qrcode_cute')
-
-        message = decode_qrcode(qrcode_cute)
-
-        if message != -1:
+        try:
+            show_img(qrcode_cute, 'qrcode_cute')
+            message = decode_qrcode(qrcode_cute)
+        except Exception:
+            # print('没有图片')
+            continue
+        if message is not None:
             return message, qrcode_cute
     return None, None
 
 
 def decode_qrcode(image):
     barcodes = pyzbar.decode(image)
-    for barcode in barcodes:
-        # 条形码数据为字节对象，所以如果我们想在输出图像上
-        # 画出来，就需要先将它转换成字符串
-        barcodeData = barcode.data.decode("utf-8")
-        barcodeType = barcode.type
-    try:
-        return barcodeData
-    except:
-        return -1
+    # for barcode in barcodes:
+    barcodeData = barcodes.data.decode("utf-8")
+    print('barcodeData: ', barcodeData)
+    return barcodeData
+    # try:
+    #     return barcodeData
+    # except:
+    #     return None
 
 
 # 黑色二维码识别工具方法
@@ -148,16 +154,20 @@ def qrcode(image):
     # 蓝色二维码识别
     qrcode_blue_info = qrcode_blue(image)
     if qrcode_blue_info is None:
-        logging.info('二维码识别失败')
+        logging.info('二维码识别失败1')
         return qrcode_blue_info
     else:
-        res = format_data(qrcode_blue_info)
-        logging.info("二维码识别成功: " + str(res))
-        return res
+        try:
+            res = format_data(qrcode_blue_info)
+        except IndexError:
+            logging.info('二维码识别失败2')
+        else:
+            logging.info("二维码识别成功: " + str(res))
+            return res
 
 
 if __name__ == '__main__':
     # 读取图片
-    img_path = './pictures/Image_00036.jpg'
+    img_path = './pictures/Image_00137.jpg'
     img = cv2.imread(img_path)
     qrcode(img)

@@ -127,7 +127,7 @@ def detect_circle(img):
 
 
 if __name__ == "__main__":
-    file_path = './pictures/hsv_color.png'
+    file_path = './pictures/hsv_color_threshold.png'
 
     img = cv2.imread(file_path)
 

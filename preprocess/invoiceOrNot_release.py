@@ -44,7 +44,7 @@ def detect_circle(image):
         approx = cv2.approxPolyDP(box, epsilon, True)  # 根据精度重新绘制轮廓
         # ***************visual****************
         img_copy = image.copy()
-        cv2.drawContours(img_copy, [approx], -1, (255, 0, 0), 2)
+        cv2.drawContours(img_copy, [approx], -1, (255, 0, 0), 2)  # [x*(1,2)]
         approx_num = len(approx)
         if 8 < approx_num:  # 剔除噪音(少于10个点的轮廓剔除)
             seal_num += 1
@@ -90,7 +90,7 @@ def invoice_or_not(image):
 
 
 if __name__ == '__main__':
-    pdf_path = './pictures/pdf/17504-顺盛74100.pdf'
+    pdf_path = './pictures/Image_00036.jpg'
     crops_save_path = './results/crops/'
 
     # ------pdf转images----- -

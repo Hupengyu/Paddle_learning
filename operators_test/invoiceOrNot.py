@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
-image0 = cv2.imread("pictures/hsv_color.png", cv2.IMREAD_COLOR)  # 以BGR色彩读取图片
+image0 = cv2.imread("pictures/hsv_color_threshold.png", cv2.IMREAD_COLOR)  # 以BGR色彩读取图片
 image = cv2.resize(image0, None, fx=0.8, fy=0.8,
                    interpolation=cv2.INTER_CUBIC)  # 缩小图片0.5倍（图片太大了）
 cols, rows, _ = image.shape  # 获取图片高宽
