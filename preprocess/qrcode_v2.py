@@ -2,7 +2,6 @@
 from __future__ import print_function
 import numpy as np
 import cv2
-import fitz
 from log_config import log
 import pyzbar.pyzbar as pyzbar
 
@@ -59,9 +58,9 @@ def get_contours(img0):
     edged = cv2.Canny(gray, 50, 120)
 
     # 形态学变换，由于光照影响，有很多小的边缘需要进行腐蚀和膨胀处理
-    kernel = np.ones((5, 5), np.uint8)  # 膨胀腐蚀的卷积核修改
-    morphed = cv2.dilate(edged, kernel, iterations=3)  # 膨胀
-    morphed = cv2.erode(morphed, kernel, iterations=3)  # 腐蚀
+    kernel = np.ones((3, 3), np.uint8)  # 膨胀腐蚀的卷积核修改
+    morphed = cv2.dilate(edged, kernel, iterations=5)  # 膨胀
+    morphed = cv2.erode(morphed, kernel, iterations=5)  # 腐蚀
 
     morphed_copy = morphed.copy()
     contours, _ = cv2.findContours(morphed_copy, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
@@ -109,9 +108,13 @@ def decode_qrcodes(boxs, original_image):
         show_img(original_image_copy, 'decode_qrcodes')
 
         qrcode_cute = original_image[y1:y2, x1:x2]  # y1:y2, x1:x2
+        # qrcode_cute = cv2.cvtColor(qrcode_cute, cv2.COLOR_RGB2GRAY)
+        # 自适应阈值
+        dst = cv2.adaptiveThreshold(qrcode_cute, 127, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 5, 2)
+
         try:
-            show_img(qrcode_cute, 'qrcode_cute')
-            message = decode_qrcode(qrcode_cute)
+            show_img(dst, 'qrcode_cute')
+            message = decode_qrcode(dst)
         except Exception:
             # print('没有图片')
             continue
@@ -126,10 +129,6 @@ def decode_qrcode(image):
     barcodeData = barcodes.data.decode("utf-8")
     print('barcodeData: ', barcodeData)
     return barcodeData
-    # try:
-    #     return barcodeData
-    # except:
-    #     return None
 
 
 # 黑色二维码识别工具方法

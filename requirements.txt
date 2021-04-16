@@ -38,3 +38,7 @@ simplejson==3.17.2
 six==1.15.0
 traits==6.2.0
 urllib3==1.26.4
+
+Flask~=1.1.2
+pyzbar~=0.1.8
+pyclipper~=1.2.1
