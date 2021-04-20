@@ -2,12 +2,33 @@ import numpy as np
 import cv2
 import os
 import numpy
+import time
 
 pwd = os.getcwd()
 
 
+def filter_blue(image):
+    lower_unblue1 = np.array([0, 0, 0])
+    upper_unblue1 = np.array([80, 255, 255])
+
+    lower_unblue2 = np.array([124, 0, 0])
+    upper_unblue2 = np.array([255, 255, 255])
+
+    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    mask1 = cv2.inRange(hsv, lower_unblue1, upper_unblue1)  # 阈值内的设为255,其余为0
+    mask2 = cv2.inRange(hsv, lower_unblue2, upper_unblue2)  # 阈值内的设为255,其余为0
+    mask = cv2.bitwise_or(mask1, mask2)
+    blue_mask = mask == 255  # 取mask中为255的设置为true
+
+    unblue_areas = np.zeros(image.shape, np.uint8)  # 创建新画布
+    unblue_areas[:, :] = (255, 255, 255)  # 画布喷白
+    unblue_areas[blue_mask] = image[blue_mask]  # 将blue的像素点‘喷’到白色画布上
+    # 返回Img中的蓝色像素点
+    return unblue_areas
+
+
 def show_img(img, win_name):
-    img = cv2.resize(img, None, fx=0.3, fy=0.3)
+    img = cv2.resize(img, None, fx=1, fy=1)
     cv2.imshow(win_name, img)
     cv2.waitKey(0)
     # cv2.destroyAllWindows()
@@ -35,6 +56,9 @@ def save_images(image, crops_save_path, image_index):
 
 def detect_image_counts(img):
     # ------------处理重复识别-------------
+    # 先把图片的蓝色区域(主要是二维码)去除掉
+1    img = filter_blue(img)
+
     src_coor_list = []
 
     invoice_num = 0
@@ -50,20 +74,20 @@ def detect_image_counts(img):
     gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
     # 高斯模糊，消除一些噪声
     gray = cv2.GaussianBlur(gray, (1, 1), 0)
-    # show_img(gray, 'gray')
+    show_img(gray, 'gray')
 
     # 寻找边缘
     edged = cv2.Canny(gray, 50, 120)
-    # show_img(edged, 'edged')
+    show_img(edged, 'edged')
 
     # 形态学变换，由于光照影响，有很多小的边缘需要进行腐蚀和膨胀处理
-    kernel = np.ones((1, 1), np.uint8)      # 膨胀腐蚀的卷积核修改
-    morphed = cv2.dilate(edged, kernel, iterations=5)   # 膨胀
-    morphed = cv2.erode(morphed, kernel, iterations=5)  # 腐蚀
+    # kernel = np.ones((1, 1), np.uint8)      # 膨胀腐蚀的卷积核修改
+    # morphed = cv2.dilate(edged, kernel, iterations=5)   # 膨胀
+    # morphed = cv2.erode(morphed, kernel, iterations=5)  # 腐蚀
     # show_img(morphed, 'morphed')
 
     # 找轮廓
-    morphed_copy = morphed.copy()
+    morphed_copy = edged.copy()
     cnts, _ = cv2.findContours(morphed_copy, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     # 排序，并获取其中最大的轮廓
     if len(cnts) is not 0:
@@ -71,12 +95,19 @@ def detect_image_counts(img):
     else:
         print("Did not find contours\n")
         return
-
+    box_tl_x_anchor = 500
     for box in cnts:
-        # 用周长的0.05倍作为阈值，对轮廓做近似处理，使其变成一个矩形
+        # print(box)
+        # 用周长的0.05 倍作为阈值，对轮廓做近似处理，使其变成一个矩形
         # epsilon:指定的精度，也即是原始曲线与近似曲线之间的最大距离
-        # epsilon = 0.001 * cv2.arcLength(box, True)
-        # approx = cv2.approxPolyDP(box, epsilon, True)
+        # 多边形可视化
+        epsilon = 0.001 * cv2.arcLength(box, True)
+        approx = cv2.approxPolyDP(box, epsilon, True)
+        img_copy = img.copy()
+        cv2.drawContours(img_copy, [approx], -1, (0, 0, 255), 3)
+        show_img(img_copy, 'approx')
+
+        # 画矩形
         rect = cv2.minAreaRect(box)
         box = np.int0(cv2.boxPoints(rect))
 
@@ -84,7 +115,9 @@ def detect_image_counts(img):
         # img_copy = img.copy()
         # cv2.drawContours(img_copy, [box], -1, (255, 0, 0), 2)
         # show_img(img_copy, 'drawContours')
-
+        img_copy = img.copy()
+        cv2.drawContours(img_copy, [box], -1, (0, 0, 255), 3)
+        show_img(img_copy, 'drawContours')
         # 获取透视变换的原坐标
         if box.shape[0] is not 4:
             print("Found a non-rect\n")
@@ -94,6 +127,15 @@ def detect_image_counts(img):
 
         # 右上,左上,左下,右下 坐标
         (tr, tl, bl, br) = src_coor
+        min_tmp = min(tl[0], tr[0])
+        min_tmp = min(min_tmp, bl[0])
+        min_tmp = min(min_tmp, br[0])
+
+        # # 如果两个矩形相距过近，则认为重复识别
+        if abs(min_tmp - box_tl_x_anchor) < 150:
+            continue
+        box_tl_x_anchor = min_tmp
+        print('box_tl_x_anchor: ', box_tl_x_anchor)
 
         # 计算宽
         w1 = np.sqrt((tr[0] - tl[0]) ** 2 + (tr[1] - tl[1]) ** 2)
@@ -111,8 +153,8 @@ def detect_image_counts(img):
 
         area_box = max_h * max_w
 
-        length_ratio = max_length / img_w   # 长度比
-        area_ratio = area_box / img_area    # 面积比
+        length_ratio = max_length / img_w  # 长度比
+        area_ratio = area_box / img_area  # 面积比
         length_height_ratio = min_length / max_length
 
         # print(length_ratio)
@@ -124,6 +166,10 @@ def detect_image_counts(img):
             # print('--------------enter---------------')
             # print('area_box: ', area_box)
             # print("coor: ", src_coor)
+            img_copy = img.copy()
+            cv2.drawContours(img_copy, [box], -1, (255, 0, 0), 2)
+            show_img(img_copy, 'drawContours')
+
             src_coor_list_len = len(src_coor_list)
             if src_coor_list_len != 0:
                 for i in range(0, src_coor_list_len):

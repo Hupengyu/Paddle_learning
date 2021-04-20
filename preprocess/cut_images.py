@@ -25,7 +25,7 @@ def cut_images_save(img, save_path):
 
 
 if __name__ == '__main__':
-    file_path = './pictures/hsv_color_threshold.png'
+    file_path = './pictures/00.jpg'
     crops_save_path = './results/crops/'
 
     img = cv2.imread(file_path)
