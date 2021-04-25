@@ -124,11 +124,11 @@ def detect_image_counts(img):
         if box.shape[0] is not 4:
             print("Found a non-rect\n")
             continue
-        src_coor = np.reshape(box, (4, 2))
+        src_coor = np.reshape(box, (4, 2))  # 并不会对坐标进行排序
         src_coor = np.float32(src_coor)
 
         # 右上,左上,左下,右下 坐标
-        (tr, tl, bl, br) = src_coor
+        (tr, tl, bl, br) = src_coor   # 你能保证坐标的顺序吗？
         # min_x_tmp
         min_x_tmp = min(tl[0], tr[0])
         min_x_tmp = min(min_x_tmp, bl[0])
@@ -140,12 +140,6 @@ def detect_image_counts(img):
 
         if abs(min_y_tmp - box_tl_y_anchor) < 150 and abs(min_x_tmp - box_tl_x_anchor) < 150:
             continue
-        # box_tl_x_anchor = min_x_tmp
-        # box_tl_y_anchor = min_y_tmp
-
-        # # 如果两个矩形左上角相距过近，则认为重复识别
-        # print('box_tl_x_anchor: ', box_tl_x_anchor)
-        # print('box_tl_y _anchor: ', box_tl_y_anchor)
 
         # 计算宽
         w1 = np.sqrt((tr[0] - tl[0]) ** 2 + (tr[1] - tl[1]) ** 2)
@@ -171,34 +165,34 @@ def detect_image_counts(img):
         # print(area_ratio)
         # print(length_height_ratio)
         # print('--------------ratio---------------')
-        # 通过判断
+        # **************************************判断box_pre_elc***********************************
         if 0.85 < length_ratio < 0.97 and 0.30 < area_ratio < 0.8 and 0.45 < length_height_ratio < 0.55:
             # print('--------------enter---------------')
             # print('area_box: ', area_box)
             # print("coor: ", src_coor)
-            # img_copy = img.copy()
-            # cv2.drawContours(img_copy, [box], -1, (255, 0, 0), 2)
-            # show_img(img_copy, 'drawContours')
+            img_copy = img.copy()
+            cv2.drawContours(img_copy, [box], -1, (255, 0, 0), 2)
+            show_img(img_copy, 'drawContours')
 
-            src_coor_list_len = len(src_coor_list)
+            src_coor_list_len = len(src_coor_list)  # box_pre_elc的个数
             if src_coor_list_len != 0:
+                # **********************过滤掉相似的box_pre_elc，不相似的留着并相加*********************
                 for i in range(0, src_coor_list_len):
-                    dif = np.square(src_coor_list[i] - src_coor).sum(axis=1).sum(axis=0)
-                    # print('dif: ', dif)
-                    dif_ratio = dif / area_box
-                    # print('dif_ratio: ', dif_ratio)
-                    if 0.0 <= dif_ratio < 0.5:
+                    dif = np.square(src_coor_list[i] - src_coor).sum(axis=1).sum(axis=0)    # 四个点横纵坐标的差值的平方和
+                    dif_ratio = dif / area_box  # 偏离面积与当前面积的商
+                    if 0.0 <= dif_ratio < 0.5:  # 偏离率小于0.5的情况下，就是说他们相交的情况大于0.5,此时过滤掉！！！
                         # print('---------------重复--------------')
                         continue
-                    elif src_coor_list_len == i + 1:
+                    elif src_coor_list_len == i + 1:    # 最后一个都不重合就相加
                         invoice_num += 1
                         box_tl_x_anchor = min_x_tmp     # 如果box确实符合，就替换anchor
                         box_tl_y_anchor = min_y_tmp     # 如果box确实符合，就替换anchor
-                    # print('判断结束')
-                    print('invoice_num: ', invoice_num)
-                    # print('--------------不重复---------------')
-            else:
+                        print('invoice_num: ', invoice_num)
+                        # print('--------------不重复---------------')
+            else:   # 初始化第一个box_pre_elc
                 invoice_num = 1
+                box_tl_x_anchor = min_x_tmp  # 初始化box_tl_x_anchor
+                box_tl_y_anchor = min_y_tmp  # 初始化box_tl_y_anchor
                 print('invoice_num: ', invoice_num)
             src_coor_list.append(src_coor)
 
