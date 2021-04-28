@@ -7,10 +7,11 @@ pwd = os.getcwd()
 image_index = 1
 
 
-def cut_images_save(img, save_path):
+def cut_images_save(img, if_show_pre, img_name, save_path):
     global image_index
     print('**********************开始处理图片*************************')
-    wrap = detect_image_counts(img)
+    print('img_name: ', img_name)
+    wrap = detect_image_counts(img, if_show_pre, img_name)
     print('wrap: ', wrap)
     if wrap == 2:
         print('-------------此图片有两张发票----------------')

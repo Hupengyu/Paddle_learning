@@ -6,10 +6,18 @@ pwd = os.getcwd()
 
 
 def filter_blue(image):
-    lower_unblue1 = np.array([0, 0, 0])
+    # release1.0:只去除蓝色字体
+    # lower_unblue1 = np.array([0, 0, 0])
+    # upper_unblue1 = np.array([80, 255, 255])
+    #
+    # lower_unblue2 = np.array([124, 0, 0])
+    # upper_unblue2 = np.array([255, 255, 255])
+
+    # 红色印章的阈值也去掉
+    lower_unblue1 = np.array([15, 0, 0])
     upper_unblue1 = np.array([80, 255, 255])
 
-    lower_unblue2 = np.array([124, 0, 0])
+    lower_unblue2 = np.array([180, 0, 0])
     upper_unblue2 = np.array([255, 255, 255])
 
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
@@ -26,10 +34,9 @@ def filter_blue(image):
 
 
 def show_img(img, win_name):
-    img = cv2.resize(img, None, fx=0.3, fy=0.3)
+    img = cv2.resize(img, None, fx=0.5, fy=0.5)
     cv2.imshow(win_name, img)
     cv2.waitKey(0)
-    # cv2.destroyAllWindows()
 
 
 # 分割图片
@@ -52,9 +59,11 @@ def save_images(image, crops_save_path, image_index):
     cv2.imwrite(crops_save_path + str(image_index) + '.png', image)
 
 
-def detect_image_counts(img):
+def detect_image_counts(img, if_show_pre, img_name):
     # ------------处理重复识别-------------
     # 先把图片的蓝色区域(主要是二维码)去除掉
+    # show_img(img, 'img' + img_name)
+
     img = filter_blue(img)
 
     src_coor_list = []
@@ -62,31 +71,34 @@ def detect_image_counts(img):
     invoice_num = 0
 
     # 计算图片面积
-    img_h = img.shape[0]
-    img_w = img.shape[1]
+    img_h, img_w = img.shape[0:2]
     img_area = img_w * img_h
-    # if img_h > img_w:  # 旋转图片
-    #     img = np.rot90(img)
 
     # 转换为灰度图
     gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+    if if_show_pre:
+        show_img(gray, 'gray')
     # 高斯模糊，消除一些噪声
-    gray = cv2.GaussianBlur(gray, (1, 1), 0)
-    # show_img(gray, 'gray')
+    gray = cv2.GaussianBlur(gray, (3, 3), 0)
+    # gray = cv2.bilateralFilter(gray, (5, 5), 0)
+    if if_show_pre:
+        show_img(gray, 'GaussianBlur')
 
     # 寻找边缘
     edged = cv2.Canny(gray, 50, 120)
-    # show_img(edged, 'edged')
+    if if_show_pre:
+        show_img(edged, 'edged')
 
     # 形态学变换，由于光照影响，有很多小的边缘需要进行腐蚀和膨胀处理
-    # kernel = np.ones((1, 1), np.uint8)      # 膨胀腐蚀的卷积核修改
-    # morphed = cv2.dilate(edged, kernel, iterations=5)   # 膨胀
-    # morphed = cv2.erode(morphed, kernel, iterations=5)  # 腐蚀
-    # show_img(morphed, 'morphed')
+    kernel = np.ones((3, 3), np.uint8)      # 膨胀腐蚀的卷积核修改
+    morphed = cv2.dilate(edged, kernel, iterations=1)   # 膨胀
+    morphed = cv2.erode(morphed, kernel, iterations=1)  # 腐蚀
+    if if_show_pre:
+        show_img(morphed, 'morphed_' + img_name)
 
     # 找轮廓
-    morphed_copy = edged.copy()
-    cnts, _ = cv2.findContours(morphed_copy, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    morphed_copy = morphed.copy()
+    cnts, _ = cv2.findContours(morphed_copy, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     # 排序，并获取其中最大的轮廓
     if len(cnts) is not 0:
         cnts = sorted(cnts, key=cv2.contourArea, reverse=True)[:5]
@@ -116,10 +128,8 @@ def detect_image_counts(img):
         # 在原图的拷贝上画出轮廓
         # img_copy = img.copy()
         # cv2.drawContours(img_copy, [box], -1, (255, 0, 0), 2)
-        # show_img(img_copy, 'drawContours')
-        # img_copy = img.copy()
-        # cv2.drawContours(img_copy, [box], -1, (0, 0, 255), 3)
-        # show_img(img_copy, 'drawContours')
+        # show_img(img_copy, 'cnts_drawContours')
+
         # 获取透视变换的原坐标
         if box.shape[0] is not 4:
             print("Found a non-rect\n")
@@ -128,7 +138,7 @@ def detect_image_counts(img):
         src_coor = np.float32(src_coor)
 
         # 右上,左上,左下,右下 坐标
-        (tr, tl, bl, br) = src_coor   # 你能保证坐标的顺序吗？
+        (tr, tl, bl, br) = src_coor   # 你能保证坐标的顺序吗？NO
         # min_x_tmp
         min_x_tmp = min(tl[0], tr[0])
         min_x_tmp = min(min_x_tmp, bl[0])
@@ -161,18 +171,18 @@ def detect_image_counts(img):
         area_ratio = area_box / img_area  # 面积比
         length_height_ratio = min_length / max_length
 
-        # print(length_ratio)
+        # print('length_ratio: ', length_ratio)
         # print(area_ratio)
         # print(length_height_ratio)
         # print('--------------ratio---------------')
         # **************************************判断box_pre_elc***********************************
-        if 0.85 < length_ratio < 0.97 and 0.30 < area_ratio < 0.8 and 0.45 < length_height_ratio < 0.55:
+        if 0.85 < length_ratio < 0.98 and 0.30 < area_ratio < 0.8 and 0.45 < length_height_ratio < 0.55:
             # print('--------------enter---------------')
             # print('area_box: ', area_box)
             # print("coor: ", src_coor)
             img_copy = img.copy()
             cv2.drawContours(img_copy, [box], -1, (255, 0, 0), 2)
-            show_img(img_copy, 'drawContours')
+            show_img(img_copy, 'right_drawContours_')
 
             src_coor_list_len = len(src_coor_list)  # box_pre_elc的个数
             if src_coor_list_len != 0:
