@@ -7,18 +7,18 @@ pwd = os.getcwd()
 
 def filter_blue(image):
     # release1.0:只去除蓝色字体
-    # lower_unblue1 = np.array([0, 0, 0])
-    # upper_unblue1 = np.array([80, 255, 255])
-    #
-    # lower_unblue2 = np.array([124, 0, 0])
-    # upper_unblue2 = np.array([255, 255, 255])
-
-    # 红色印章的阈值也去掉
-    lower_unblue1 = np.array([15, 0, 0])
+    lower_unblue1 = np.array([0, 0, 0])
     upper_unblue1 = np.array([80, 255, 255])
 
-    lower_unblue2 = np.array([180, 0, 0])
+    lower_unblue2 = np.array([124, 0, 0])
     upper_unblue2 = np.array([255, 255, 255])
+
+    # # 红色印章的阈值也去掉
+    # lower_unblue1 = np.array([15, 0, 0])
+    # upper_unblue1 = np.array([80, 255, 255])
+    #
+    # lower_unblue2 = np.array([180, 0, 0])
+    # upper_unblue2 = np.array([255, 255, 255])
 
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     mask1 = cv2.inRange(hsv, lower_unblue1, upper_unblue1)  # 阈值内的设为255,其余为0
@@ -59,12 +59,12 @@ def save_images(image, crops_save_path, image_index):
     cv2.imwrite(crops_save_path + str(image_index) + '.png', image)
 
 
-def detect_image_counts(img, if_show_pre, img_name):
+def detect_image_counts(img, if_show_pre=False, if_show=True, img_name=''):
     # ------------处理重复识别-------------
     # 先把图片的蓝色区域(主要是二维码)去除掉
     # show_img(img, 'img' + img_name)
 
-    img = filter_blue(img)
+    # img = filter_blue(img)
 
     src_coor_list = []
 
@@ -90,9 +90,9 @@ def detect_image_counts(img, if_show_pre, img_name):
         show_img(edged, 'edged')
 
     # 形态学变换，由于光照影响，有很多小的边缘需要进行腐蚀和膨胀处理
-    kernel = np.ones((3, 3), np.uint8)      # 膨胀腐蚀的卷积核修改
-    morphed = cv2.dilate(edged, kernel, iterations=1)   # 膨胀
-    morphed = cv2.erode(morphed, kernel, iterations=1)  # 腐蚀
+    kernel = np.ones((3, 3), np.uint8)  # 膨胀腐蚀的卷积核修改
+    morphed = cv2.dilate(edged, kernel, iterations=2)  # 膨胀
+    morphed = cv2.erode(morphed, kernel, iterations=2)  # 腐蚀
     if if_show_pre:
         show_img(morphed, 'morphed_' + img_name)
 
@@ -138,7 +138,7 @@ def detect_image_counts(img, if_show_pre, img_name):
         src_coor = np.float32(src_coor)
 
         # 右上,左上,左下,右下 坐标
-        (tr, tl, bl, br) = src_coor   # 你能保证坐标的顺序吗？NO
+        (tr, tl, bl, br) = src_coor  # 你能保证坐标的顺序吗？NO
         # min_x_tmp
         min_x_tmp = min(tl[0], tr[0])
         min_x_tmp = min(min_x_tmp, bl[0])
@@ -176,30 +176,32 @@ def detect_image_counts(img, if_show_pre, img_name):
         # print(length_height_ratio)
         # print('--------------ratio---------------')
         # **************************************判断box_pre_elc***********************************
-        if 0.85 < length_ratio < 0.98 and 0.30 < area_ratio < 0.8 and 0.45 < length_height_ratio < 0.55:
+        if 0.85 < length_ratio and 0.30 < area_ratio < 0.8 and 0.45 < length_height_ratio < 0.55:
             # print('--------------enter---------------')
             # print('area_box: ', area_box)
             # print("coor: ", src_coor)
-            img_copy = img.copy()
-            cv2.drawContours(img_copy, [box], -1, (255, 0, 0), 2)
-            show_img(img_copy, 'right_drawContours_')
+
+            if if_show:
+                img_copy = img.copy()
+                cv2.drawContours(img_copy, [box], -1, (255, 0, 0), 2)
+                show_img(img_copy, 'right_drawContours_')
 
             src_coor_list_len = len(src_coor_list)  # box_pre_elc的个数
             if src_coor_list_len != 0:
                 # **********************过滤掉相似的box_pre_elc，不相似的留着并相加*********************
                 for i in range(0, src_coor_list_len):
-                    dif = np.square(src_coor_list[i] - src_coor).sum(axis=1).sum(axis=0)    # 四个点横纵坐标的差值的平方和
+                    dif = np.square(src_coor_list[i] - src_coor).sum(axis=1).sum(axis=0)  # 四个点横纵坐标的差值的平方和
                     dif_ratio = dif / area_box  # 偏离面积与当前面积的商
                     if 0.0 <= dif_ratio < 0.5:  # 偏离率小于0.5的情况下，就是说他们相交的情况大于0.5,此时过滤掉！！！
                         # print('---------------重复--------------')
                         continue
-                    elif src_coor_list_len == i + 1:    # 最后一个都不重合就相加
+                    elif src_coor_list_len == i + 1:  # 最后一个都不重合就相加
                         invoice_num += 1
-                        box_tl_x_anchor = min_x_tmp     # 如果box确实符合，就替换anchor
-                        box_tl_y_anchor = min_y_tmp     # 如果box确实符合，就替换anchor
+                        box_tl_x_anchor = min_x_tmp  # 如果box确实符合，就替换anchor
+                        box_tl_y_anchor = min_y_tmp  # 如果box确实符合，就替换anchor
                         print('invoice_num: ', invoice_num)
                         # print('--------------不重复---------------')
-            else:   # 初始化第一个box_pre_elc
+            else:  # 初始化第一个box_pre_elc
                 invoice_num = 1
                 box_tl_x_anchor = min_x_tmp  # 初始化box_tl_x_anchor
                 box_tl_y_anchor = min_y_tmp  # 初始化box_tl_y_anchor
