@@ -19,6 +19,7 @@ if __name__ == '__main__':
     img = cv2.imread('histgram.png')
 
     upload_path = "temporary_img"
+    initialize_images_dir(upload_path)
     url_path = os.path.join(upload_path, str(uuid.uuid1()))
     initialize_images_dir(url_path)
     images_path = os.path.join(url_path, invoice_file_name)
