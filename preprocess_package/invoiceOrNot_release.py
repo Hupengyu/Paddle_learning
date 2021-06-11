@@ -71,7 +71,7 @@ def seal_mask_handle(img):
 
     mask = cv2.bitwise_or(mask1, mask2)  # hsv的红色有两个范围
 
-    red_mask = mask2 == 255  # 取mask中为255的设置为true
+    red_mask = mask == 255  # 取mask中为255的设置为true
 
     red_seal = np.zeros(img.shape, np.uint8)  # 新画布mask_white
     red_seal[:, :] = (255, 255, 255)  # 喷白
