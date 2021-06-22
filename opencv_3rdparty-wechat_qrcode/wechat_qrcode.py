@@ -7,9 +7,11 @@ imgs_path = 'qrcode_imgs'
 
 
 def wechat_qrcode(image):
-    img_strong = image_enhancement(image)
-    detector = cv2.wechat_qrcode_WeChatQRCode(model_path + "/" + "detect.prototxt", model_path + "/" +"detect.caffemodel", model_path + "/" +"sr.prototxt", model_path + "/" +"sr.caffemodel")
-    res_qrcode, _ = detector.detectAndDecode(img_strong)
+    # img_strong = image_enhancement(image)
+    detector = cv2.wechat_qrcode_WeChatQRCode(model_path + "/" + "detect.prototxt",
+                                              model_path + "/" + "detect.caffemodel", model_path + "/" + "sr.prototxt",
+                                              model_path + "/" + "sr.caffemodel")
+    res_qrcode, _ = detector.detectAndDecode(image)
     return res_qrcode, _
 
 
@@ -29,7 +31,7 @@ def image_enhancement(img):
         return output_img
 
     out2 = gamma(img, 0.00000005, 4.0)
-    show_img(out2, 'out2')
+    # show_img(out2, 'out2')
     # 直方图均衡增强-pass
     # result = img.copy()
     # for j in range(3):
