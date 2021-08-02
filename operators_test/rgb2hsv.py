@@ -18,7 +18,7 @@ cv2.createTrackbar("US", "Tracking", 255, 255, nothing)
 cv2.createTrackbar("UV", "Tracking", 255, 255, nothing)
 
 while True:
-    image_path = 'pictures/20210515-093946.png'
+    image_path = 'pictures/微信图片_202107271041201.jpg'
     frame = cv2.imread(image_path)
     # frame = np.asarray(frame)
 
